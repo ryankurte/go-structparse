@@ -1,0 +1,7 @@
+---
+
+# strings beginning with $ will be parsed as environmental variables with the provided prefix
+name: $NAME
+host: 
+  name: $HOSTNAME
+  port: $PORT
