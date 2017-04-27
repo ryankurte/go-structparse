@@ -48,7 +48,7 @@ func TestEnvironmentInfill(t *testing.T) {
 		os.Setenv(fmt.Sprintf("%s%s", prefix, keyTwoName), keyTwoValue)
 		os.Setenv(fmt.Sprintf("%s%s", prefix, keyThreeName), keyThreeValue)
 
-		c2 := infillEnvironment(delimiter, prefix, &c)
+		c2 := infillConfig(delimiter, prefix, &c)
 
 		config2 := c2.(*FakeConfig)
 

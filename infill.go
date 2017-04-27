@@ -2,13 +2,16 @@ package configurer
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"strings"
+
+	"github.com/oleiade/reflections"
 )
 
 // Parses a config struct and loads
-func infillEnvironment(delimiter, prefix string, config interface{}) interface{} {
+func infillConfig(delimiter, prefix string, config interface{}) interface{} {
 
 	original := reflect.ValueOf(config)
 
@@ -17,6 +20,70 @@ func infillEnvironment(delimiter, prefix string, config interface{}) interface{}
 
 	// Remove the reflection wrapper
 	return copy.Interface()
+}
+
+func v2(delimiter, prefix string, config interface{}) error {
+
+	log.Printf("Object: %+v", config)
+
+	fields, err := reflections.FieldsDeep(config)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Fields: %+v", fields)
+
+	for _, fieldName := range fields {
+		kind, err := reflections.GetFieldKind(config, fieldName)
+		if err != nil {
+			return err
+		}
+
+		field, err := reflections.GetField(config, fieldName)
+		if err != nil {
+			return err
+		}
+
+		switch kind {
+		case reflect.String:
+			value := mapString(delimiter, prefix, field.(string))
+			reflections.SetField(config, fieldName, value)
+
+		case reflect.Struct:
+			v2(delimiter, prefix, reflect.ValueOf(field))
+
+		case reflect.Map:
+			v2(delimiter, prefix, field)
+		}
+	}
+
+	return nil
+}
+
+func v2recurse(delimiter, prefix string, obj interface{}) error {
+	val := reflect.ValueOf(obj)
+	kind := val.Kind()
+	t := val.Type()
+
+	log.Printf("Object: %+v Kind: %+v", obj, kind)
+
+	switch kind {
+	case reflect.Ptr:
+		if val.IsValid() {
+			v2recurse(delimiter, prefix, val.Elem())
+		}
+	case reflect.Struct:
+		for i := 0; i < val.NumField(); i++ {
+			field := val.Field(i)
+			log.Printf("Field: %s %+v", t.Field(i).Name, reflect.ValueOf(field).Interface())
+			//v2recurse(delimiter, prefix, field.Interface())
+		}
+	case reflect.String:
+		value := mapString(delimiter, prefix, val.String())
+		val.Elem().SetString(value)
+	}
+
+	return nil
 }
 
 // Parses a string looking for a delimiter indicating that the value should be loaded from the environment
