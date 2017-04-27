@@ -1,4 +1,9 @@
-package parse
+/**
+ * go-structparse
+ * Copyright 2017 Ryan Kurte
+ */
+
+package structparse
 
 import (
 	"fmt"
@@ -10,36 +15,6 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/stretchr/testify/assert"
-)
-
-type Embedded struct {
-	KeyThree string
-}
-
-type FakeConfig struct {
-	KeyOne   string
-	Map      map[string]string
-	Embedded Embedded
-}
-
-type HostExample struct {
-	Name string
-	Port string
-}
-
-type ConfigExample struct {
-	Name string
-	Host HostExample
-}
-
-const (
-	keyOneName    = "KEY_ONE"
-	keyOneValue   = "KEY_ONE_VALUE"
-	keyTwoIndex   = "KEY_TWO_INDEX"
-	keyTwoName    = "KEY_TWO"
-	keyTwoValue   = "KEY_TWO_VALUE"
-	keyThreeName  = "KEY_THREE"
-	keyThreeValue = "KEY_THREE_VALUE"
 )
 
 const (
@@ -76,54 +51,57 @@ func FakeEnvMapper(line string) string {
 	return val
 }
 
-func NoTestConfigInfill(t *testing.T) {
+func TestParsing(t *testing.T) {
+
+	RegisterKey(1)
 
 	t.Run("Handles struct fields", func(t *testing.T) {
+		c := struct{ Test string }{GetKey(1)}
 
-		RegisterKey(1)
-
-		c := struct {
-			Test string
-		}{
-			GetKey(1),
-		}
-
-		StructStrings(FakeEnvMapper, &c)
+		Strings(FakeEnvMapper, &c)
 
 		assert.EqualValues(t, GetValue(1), c.Test)
 	})
 
-	t.Run("Infills strings in structure from environment", func(t *testing.T) {
-		prefix := "TEST_"
-		delimiter := "$"
+	t.Run("Handles map fields", func(t *testing.T) {
+		c := make(map[string]string)
+		c["test"] = GetKey(1)
 
-		c := FakeConfig{
-			KeyOne:   fmt.Sprintf("%s%s", delimiter, keyOneName),
-			Map:      make(map[string]string),
-			Embedded: Embedded{fmt.Sprintf("%s%s", delimiter, keyThreeName)},
-		}
-		c.Map[keyTwoIndex] = fmt.Sprintf("%s%s", delimiter, keyTwoName)
+		Strings(FakeEnvMapper, &c)
 
-		os.Setenv(fmt.Sprintf("%s%s", prefix, keyOneName), keyOneValue)
-		os.Setenv(fmt.Sprintf("%s%s", prefix, keyTwoName), keyTwoValue)
-		os.Setenv(fmt.Sprintf("%s%s", prefix, keyThreeName), keyThreeValue)
-
-		StructStrings(NewEnvironmentMapper(delimiter, prefix), &c)
-
-		assert.EqualValues(t, keyOneValue, c.KeyOne)
-		assert.EqualValues(t, keyTwoValue, c.Map[keyTwoIndex])
-		assert.EqualValues(t, keyThreeValue, c.Embedded.KeyThree)
+		assert.EqualValues(t, GetValue(1), c["test"])
 	})
 
-	t.Run("Loads and infill structures from file", func(t *testing.T) {
-		delimiter := "$"
-		prefix := "TEST_"
+	t.Run("Handles embedded structs", func(t *testing.T) {
+		c := struct{ Fake struct{ Test string } }{struct{ Test string }{GetKey(1)}}
+
+		Strings(FakeEnvMapper, &c)
+
+		assert.EqualValues(t, GetValue(1), c.Fake.Test)
+	})
+
+	t.Run("Handles embedded maps", func(t *testing.T) {
+		c := struct{ Fake map[string]string }{make(map[string]string)}
+		c.Fake["test"] = GetKey(1)
+
+		Strings(FakeEnvMapper, &c)
+
+		assert.EqualValues(t, GetValue(1), c.Fake["test"])
+	})
+
+	t.Run("Infills strings in structure from environment", func(t *testing.T) {
 
 		os.Setenv(fmt.Sprintf("%s%s", prefix, "NAME"), "APP_NAME")
 		os.Setenv(fmt.Sprintf("%s%s", prefix, "HOSTNAME"), "localhost")
 		os.Setenv(fmt.Sprintf("%s%s", prefix, "PORT"), "9009")
 
-		c := ConfigExample{}
+		c := struct {
+			Name string
+			Host struct {
+				Name string
+				Port string
+			}
+		}{}
 
 		// Load configuration file
 		data, err := ioutil.ReadFile("./example.yml")
@@ -133,7 +111,7 @@ func NoTestConfigInfill(t *testing.T) {
 		err = yaml.Unmarshal(data, &c)
 		assert.Nil(t, err)
 
-		StructStrings(NewEnvironmentMapper(delimiter, prefix), &c)
+		Strings(NewEnvironmentMapper(delimiter, prefix), &c)
 
 		assert.EqualValues(t, "APP_NAME", c.Name)
 		assert.EqualValues(t, "localhost", c.Host.Name)

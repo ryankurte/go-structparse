@@ -1,4 +1,4 @@
-package parse
+package structparse
 
 import (
 	"fmt"
@@ -25,11 +25,12 @@ func NewEnvironmentMapper(delimiter, prefix string) Parse {
 // Parse is a string parsing function to be called when strings are found
 type Parse func(in string) string
 
-// StructStrings reflects over a structure and calls Parse when strings are located
-func StructStrings(parse Parse, obj interface{}) {
+// Strings reflects over a structure and calls Parse when strings are located
+func Strings(parse Parse, obj interface{}) {
 	parseStringsRecursive(parse, reflect.ValueOf(obj))
 }
 
+// Internal recursive parsing function
 func parseStringsRecursive(parse Parse, val reflect.Value) {
 	switch val.Kind() {
 	case reflect.Ptr:
