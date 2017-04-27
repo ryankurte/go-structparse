@@ -29,9 +29,9 @@ const (
 	keyThreeValue = "KEY_THREE_VALUE"
 )
 
-func TestConfigInfill(t *testing.T) {
+func TestEnvironmentInfill(t *testing.T) {
 
-	t.Run("Infill strings in config structure", func(t *testing.T) {
+	t.Run("Infill strings in structure from the environment", func(t *testing.T) {
 		prefix := "TEST_"
 		delimiter := "$"
 
@@ -48,7 +48,7 @@ func TestConfigInfill(t *testing.T) {
 		os.Setenv(fmt.Sprintf("%s%s", prefix, keyTwoName), keyTwoValue)
 		os.Setenv(fmt.Sprintf("%s%s", prefix, keyThreeName), keyThreeValue)
 
-		c2 := infillConfig(delimiter, prefix, &c)
+		c2 := infillEnvironment(delimiter, prefix, &c)
 
 		config2 := c2.(*FakeConfig)
 

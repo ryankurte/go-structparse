@@ -8,7 +8,7 @@ import (
 )
 
 // Parses a config struct and loads
-func infillConfig(delimiter, prefix string, config interface{}) interface{} {
+func infillEnvironment(delimiter, prefix string, config interface{}) interface{} {
 
 	original := reflect.ValueOf(config)
 
