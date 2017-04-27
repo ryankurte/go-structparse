@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v2"
@@ -41,7 +42,56 @@ const (
 	keyThreeValue = "KEY_THREE_VALUE"
 )
 
+const (
+	prefix    = "TEST_"
+	delimiter = "$"
+)
+
+func GetKey(i uint64) string {
+	return fmt.Sprintf("KEY%d", i)
+}
+
+func GetValue(i uint64) string {
+	return fmt.Sprintf("VALUE%d", i)
+}
+
+var keys = make(map[string]string)
+
+func RegisterKey(i uint64) {
+	name := fmt.Sprintf("%s%s", prefix, GetKey(i))
+	keys[name] = GetValue(i)
+}
+
+func ClearKey(i uint64) {
+	name := fmt.Sprintf("%s%s", prefix, GetKey(i))
+	keys[name] = ""
+}
+
+func FakeEnvMapper(line string) string {
+	key := fmt.Sprintf("%s%s", prefix, strings.Replace(line, delimiter, "", -1))
+	val, ok := keys[key]
+	if !ok {
+		return "ERROR"
+	}
+	return val
+}
+
 func NoTestConfigInfill(t *testing.T) {
+
+	t.Run("Handles struct fields", func(t *testing.T) {
+
+		RegisterKey(1)
+
+		c := struct {
+			Test string
+		}{
+			GetKey(1),
+		}
+
+		StructStrings(FakeEnvMapper, &c)
+
+		assert.EqualValues(t, GetValue(1), c.Test)
+	})
 
 	t.Run("Infills strings in structure from environment", func(t *testing.T) {
 		prefix := "TEST_"
@@ -58,7 +108,7 @@ func NoTestConfigInfill(t *testing.T) {
 		os.Setenv(fmt.Sprintf("%s%s", prefix, keyTwoName), keyTwoValue)
 		os.Setenv(fmt.Sprintf("%s%s", prefix, keyThreeName), keyThreeValue)
 
-		InfillConfig(delimiter, prefix, &c)
+		StructStrings(NewEnvironmentMapper(delimiter, prefix), &c)
 
 		assert.EqualValues(t, keyOneValue, c.KeyOne)
 		assert.EqualValues(t, keyTwoValue, c.Map[keyTwoIndex])
@@ -83,7 +133,7 @@ func NoTestConfigInfill(t *testing.T) {
 		err = yaml.Unmarshal(data, &c)
 		assert.Nil(t, err)
 
-		ParseStructStrings(NewEnvironmentMapper(delimiter, prefix), &c)
+		StructStrings(NewEnvironmentMapper(delimiter, prefix), &c)
 
 		assert.EqualValues(t, "APP_NAME", c.Name)
 		assert.EqualValues(t, "localhost", c.Host.Name)

@@ -8,13 +8,8 @@ import (
 	"strings"
 )
 
-// InfillConfig Parses a config struct and loads environmental vars where fields begin with the specified delimiter
-func InfillConfig(delimiter, prefix string, config interface{}) {
-	ParseStructStrings(NewEnvironmentMapper(delimiter, prefix), config)
-}
-
 // NewEnvironmentMapper creates an environment mapping parser
-// Parses a string looking for a delimiter indicating that the value should be loaded from the environment
+// This parses a string looking for a delimiter indicating that the value should be loaded from the environment
 func NewEnvironmentMapper(delimiter, prefix string) Parse {
 	return func(line string) string {
 		if !strings.HasPrefix(line, delimiter) {
@@ -30,8 +25,8 @@ func NewEnvironmentMapper(delimiter, prefix string) Parse {
 // Parse is a string parsing function to be called when strings are found
 type Parse func(in string) string
 
-// ParseStructStrings reflects over a structure and calls Parse when strings are located
-func ParseStructStrings(parse Parse, obj interface{}) {
+// StructStrings reflects over a structure and calls Parse when strings are located
+func StructStrings(parse Parse, obj interface{}) {
 	parseStringsRecursive(parse, reflect.ValueOf(obj))
 }
 
