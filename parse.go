@@ -1,4 +1,4 @@
-package configurer
+package parse
 
 import (
 	"fmt"

@@ -1,9 +1,12 @@
-package configurer
+package parse
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"testing"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -18,6 +21,16 @@ type FakeConfig struct {
 	Embedded Embedded
 }
 
+type HostExample struct {
+	Name string
+	Port string
+}
+
+type ConfigExample struct {
+	Name string
+	Host HostExample
+}
+
 const (
 	keyOneName    = "KEY_ONE"
 	keyOneValue   = "KEY_ONE_VALUE"
@@ -30,7 +43,7 @@ const (
 
 func NoTestConfigInfill(t *testing.T) {
 
-	t.Run("Infill strings in config structure", func(t *testing.T) {
+	t.Run("Infills strings in structure from environment", func(t *testing.T) {
 		prefix := "TEST_"
 		delimiter := "$"
 
@@ -50,6 +63,31 @@ func NoTestConfigInfill(t *testing.T) {
 		assert.EqualValues(t, keyOneValue, c.KeyOne)
 		assert.EqualValues(t, keyTwoValue, c.Map[keyTwoIndex])
 		assert.EqualValues(t, keyThreeValue, c.Embedded.KeyThree)
+	})
+
+	t.Run("Loads and infill structures from file", func(t *testing.T) {
+		delimiter := "$"
+		prefix := "TEST_"
+
+		os.Setenv(fmt.Sprintf("%s%s", prefix, "NAME"), "APP_NAME")
+		os.Setenv(fmt.Sprintf("%s%s", prefix, "HOSTNAME"), "localhost")
+		os.Setenv(fmt.Sprintf("%s%s", prefix, "PORT"), "9009")
+
+		c := ConfigExample{}
+
+		// Load configuration file
+		data, err := ioutil.ReadFile("./example.yml")
+		assert.Nil(t, err)
+
+		// Unmarshal from yaml
+		err = yaml.Unmarshal(data, &c)
+		assert.Nil(t, err)
+
+		ParseStructStrings(NewEnvironmentMapper(delimiter, prefix), &c)
+
+		assert.EqualValues(t, "APP_NAME", c.Name)
+		assert.EqualValues(t, "localhost", c.Host.Name)
+		assert.EqualValues(t, "9009", c.Host.Port)
 	})
 
 }
