@@ -1,6 +1,8 @@
 # go-structparse
 
-[![Documentation](https://img.shields.io/badge/docs-godoc-blue.svg)](https://godoc.org/github.com/ryankurte/ons)
+[![Documentation](https://img.shields.io/badge/docs-godoc-blue.svg)](https://godoc.org/github.com/ryankurte/go-structparse)
+[![GitHub tag](https://img.shields.io/github/tag/ryankurte/go-structparse.svg)](https://github.com/ryankurte/go-structparse)
+[![Build Status](https://travis-ci.org/ryankurte/go-structparse.svg?branch=master)](https://travis-ci.org/ryankurte/go-structparse)
 
 A (deep) recursive field parser for golang. Basically just a reflection wrapper that finds elements in a struct or map and runs the provided function over them when found.
 This is useful as a sort of "find and replace" for fields in a structure.
