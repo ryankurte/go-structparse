@@ -2,7 +2,6 @@ package structparse
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"reflect"
 	"strings"
@@ -31,32 +30,39 @@ func Strings(parse Parse, obj interface{}) {
 }
 
 // Internal recursive parsing function
-func parseStringsRecursive(parse Parse, val reflect.Value) {
+func parseStringsRecursive(parse Parse, val reflect.Value) reflect.Value {
 	switch val.Kind() {
 	case reflect.Ptr:
 		o := val.Elem()
-		if !o.IsValid() {
-			log.Panicf("Reflecting parser error: invalid pointer %+v", val)
+		if o.IsValid() {
+			parseStringsRecursive(parse, o)
 		}
-		parseStringsRecursive(parse, o)
 	case reflect.Struct:
 		for i := 0; i < val.NumField(); i++ {
-			parseStringsRecursive(parse, val.Field(i))
+			res := parseStringsRecursive(parse, val.Field(i))
+			if res != reflect.ValueOf(nil) {
+				val.Field(i).Set(res)
+			}
 		}
 	case reflect.Slice:
 		for i := 0; i < val.Len(); i++ {
-			parseStringsRecursive(parse, val.Index(i))
+			res := parseStringsRecursive(parse, val.Index(i))
+			if res != reflect.ValueOf(nil) {
+				val.Index(i).Set(res)
+			}
 		}
 	case reflect.Map:
 		for _, k := range val.MapKeys() {
 			mapVal := val.MapIndex(k)
-			if mapVal.Kind() != reflect.String {
-				log.Panicf("Reflecting parser error: structs-in-maps not supported")
+			res := parseStringsRecursive(parse, mapVal)
+			if res != reflect.ValueOf(nil) {
+				val.SetMapIndex(k, res)
 			}
-			val.SetMapIndex(k, reflect.ValueOf(parse(mapVal.String())))
 		}
 	case reflect.String:
 		value := parse(val.String())
-		val.SetString(value)
+		return reflect.ValueOf(value)
 	}
+
+	return reflect.ValueOf(nil)
 }

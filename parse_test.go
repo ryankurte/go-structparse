@@ -89,6 +89,16 @@ func TestParsing(t *testing.T) {
 		assert.EqualValues(t, GetValue(1), c.Fake["test"])
 	})
 
+	t.Run("Handles recursive maps", func(t *testing.T) {
+		c := struct{ Fake map[string]map[string]string }{make(map[string]map[string]string)}
+		c.Fake["test1"] = make(map[string]string)
+		c.Fake["test1"]["test2"] = GetKey(1)
+
+		Strings(FakeEnvMapper, &c)
+
+		assert.EqualValues(t, GetValue(1), c.Fake["test1"]["test2"])
+	})
+
 	t.Run("Infills strings in structure from environment", func(t *testing.T) {
 
 		os.Setenv(fmt.Sprintf("%s%s", prefix, "NAME"), "APP_NAME")
