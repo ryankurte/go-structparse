@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v2"
@@ -17,86 +16,70 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	prefix    = "TEST_"
-	delimiter = "$"
-)
-
-func GetKey(i uint64) string {
-	return fmt.Sprintf("KEY%d", i)
+type FakeEnvMapper struct {
+	Match   string
+	Replace string
 }
 
-func GetValue(i uint64) string {
-	return fmt.Sprintf("VALUE%d", i)
-}
-
-var keys = make(map[string]string)
-
-func RegisterKey(i uint64) {
-	name := fmt.Sprintf("%s%s", prefix, GetKey(i))
-	keys[name] = GetValue(i)
-}
-
-func ClearKey(i uint64) {
-	name := fmt.Sprintf("%s%s", prefix, GetKey(i))
-	keys[name] = ""
-}
-
-func FakeEnvMapper(line string) string {
-	key := fmt.Sprintf("%s%s", prefix, strings.Replace(line, delimiter, "", -1))
-	val, ok := keys[key]
-	if !ok {
-		return "ERROR"
+func (fem *FakeEnvMapper) ParseString(line string) string {
+	if line == fem.Match {
+		return fem.Replace
 	}
-	return val
+	return line
 }
 
 func TestParsing(t *testing.T) {
 
-	RegisterKey(1)
+	prefix := "TEST_"
+	delimiter := "$"
 
 	t.Run("Handles struct fields", func(t *testing.T) {
-		c := struct{ Test string }{GetKey(1)}
+		fem := FakeEnvMapper{"TEST", "REPLACED"}
+		c := struct{ Test string }{fem.Match}
 
-		Strings(FakeEnvMapper, &c)
+		Strings(&fem, &c)
 
-		assert.EqualValues(t, GetValue(1), c.Test)
+		assert.EqualValues(t, fem.Replace, c.Test)
 	})
 
 	t.Run("Handles map fields", func(t *testing.T) {
+		fem := FakeEnvMapper{"TEST", "REPLACED"}
 		c := make(map[string]string)
-		c["test"] = GetKey(1)
+		c["test"] = fem.Match
 
-		Strings(FakeEnvMapper, &c)
+		Strings(&fem, &c)
 
-		assert.EqualValues(t, GetValue(1), c["test"])
+		assert.EqualValues(t, fem.Replace, c["test"])
 	})
 
 	t.Run("Handles embedded structs", func(t *testing.T) {
-		c := struct{ Fake struct{ Test string } }{struct{ Test string }{GetKey(1)}}
+		fem := FakeEnvMapper{"TEST", "REPLACED"}
+		c := struct{ Fake struct{ Test string } }{struct{ Test string }{fem.Match}}
 
-		Strings(FakeEnvMapper, &c)
+		Strings(&fem, &c)
 
-		assert.EqualValues(t, GetValue(1), c.Fake.Test)
+		assert.EqualValues(t, fem.Replace, c.Fake.Test)
 	})
 
 	t.Run("Handles embedded maps", func(t *testing.T) {
+		fem := FakeEnvMapper{"TEST", "REPLACED"}
 		c := struct{ Fake map[string]string }{make(map[string]string)}
-		c.Fake["test"] = GetKey(1)
+		c.Fake["test"] = fem.Match
 
-		Strings(FakeEnvMapper, &c)
+		Strings(&fem, &c)
 
-		assert.EqualValues(t, GetValue(1), c.Fake["test"])
+		assert.EqualValues(t, fem.Replace, c.Fake["test"])
 	})
 
 	t.Run("Handles recursive maps", func(t *testing.T) {
+		fem := FakeEnvMapper{"TEST", "REPLACED"}
 		c := struct{ Fake map[string]map[string]string }{make(map[string]map[string]string)}
 		c.Fake["test1"] = make(map[string]string)
-		c.Fake["test1"]["test2"] = GetKey(1)
+		c.Fake["test1"]["test2"] = fem.Match
 
-		Strings(FakeEnvMapper, &c)
+		Strings(&fem, &c)
 
-		assert.EqualValues(t, GetValue(1), c.Fake["test1"]["test2"])
+		assert.EqualValues(t, fem.Replace, c.Fake["test1"]["test2"])
 	})
 
 	t.Run("Infills strings in structure from environment", func(t *testing.T) {
