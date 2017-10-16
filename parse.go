@@ -1,6 +1,7 @@
 package structparse
 
 import (
+	"fmt"
 	"reflect"
 )
 
@@ -58,7 +59,15 @@ func parseRecursive(parsers Parsers, val reflect.Value) reflect.Value {
 	case reflect.Ptr:
 		o := val.Elem()
 		if o.IsValid() {
-			parseRecursive(parsers, o)
+			res := parseRecursive(parsers, o)
+			if res != reflect.ValueOf(nil) {
+				return res
+			}
+		}
+	case reflect.Interface:
+		res := parseRecursive(parsers, val.Elem())
+		if res != reflect.ValueOf(nil) {
+			return res
 		}
 	case reflect.Struct:
 		for i := 0; i < val.NumField(); i++ {
@@ -67,6 +76,7 @@ func parseRecursive(parsers Parsers, val reflect.Value) reflect.Value {
 				val.Field(i).Set(res)
 			}
 		}
+		return val
 	case reflect.Slice:
 		for i := 0; i < val.Len(); i++ {
 			res := parseRecursive(parsers, val.Index(i))
@@ -74,6 +84,7 @@ func parseRecursive(parsers Parsers, val reflect.Value) reflect.Value {
 				val.Index(i).Set(res)
 			}
 		}
+		return val
 	case reflect.Map:
 		for _, k := range val.MapKeys() {
 			mapVal := val.MapIndex(k)
@@ -82,6 +93,7 @@ func parseRecursive(parsers Parsers, val reflect.Value) reflect.Value {
 				val.SetMapIndex(k, res)
 			}
 		}
+		return val
 	case reflect.String:
 		if parsers.StringParser != nil {
 			value := parsers.StringParser.ParseString(val.String())
@@ -100,7 +112,8 @@ func parseRecursive(parsers Parsers, val reflect.Value) reflect.Value {
 			return reflect.ValueOf(value)
 		}
 		return val
-
+	default:
+		fmt.Printf("Unhandled type: %T (kind: %+v)\n", val, val.Kind())
 	}
 
 	return reflect.ValueOf(nil)

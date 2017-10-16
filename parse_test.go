@@ -22,7 +22,6 @@ func (fem *FakeEnvMapper) ParseString(line string) string {
 	}
 	return line
 }
-
 func TestParsing(t *testing.T) {
 
 	t.Run("Handles struct fields", func(t *testing.T) {
