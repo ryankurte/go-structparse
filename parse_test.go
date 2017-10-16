@@ -16,7 +16,7 @@ type FakeEnvMapper struct {
 	Replace string
 }
 
-func (fem *FakeEnvMapper) ParseString(line string) string {
+func (fem *FakeEnvMapper) ParseString(line string) interface{} {
 	if line == fem.Match {
 		return fem.Replace
 	}

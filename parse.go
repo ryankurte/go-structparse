@@ -7,17 +7,17 @@ import (
 
 // StringParser interface is called on any string elements
 type StringParser interface {
-	ParseString(in string) string
+	ParseString(in string) interface{}
 }
 
 // IntParser called on integer elements
 type IntParser interface {
-	ParseInt(in int64) int64
+	ParseInt(in int64) interface{}
 }
 
 // FloatParser called on floating point elements
 type FloatParser interface {
-	ParseFloat(in float64) float64
+	ParseFloat(in float64) interface{}
 }
 
 // Parsers is a container for all possible parser interfaces

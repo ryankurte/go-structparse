@@ -17,7 +17,7 @@ func NewEnvironmentMapper(delimiter, prefix string) *EnvironmentMapper {
 	return &EnvironmentMapper{delimiter, prefix}
 }
 
-func (em *EnvironmentMapper) ParseString(line string) string {
+func (em *EnvironmentMapper) ParseString(line string) interface{} {
 	if !strings.HasPrefix(line, em.delimiter) {
 		return line
 	}
