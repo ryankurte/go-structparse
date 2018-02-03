@@ -1,7 +1,6 @@
 package structparse
 
 import (
-	"fmt"
 	"reflect"
 )
 
@@ -113,7 +112,7 @@ func parseRecursive(parsers Parsers, val reflect.Value) reflect.Value {
 		}
 		return val
 	default:
-		fmt.Printf("Unhandled type: %T (kind: %+v)\n", val, val.Kind())
+		return val
 	}
 
 	return reflect.ValueOf(nil)
