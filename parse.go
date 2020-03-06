@@ -98,7 +98,7 @@ func parseRecursive(parsers Parsers, val reflect.Value) reflect.Value {
 		}
 		return val
 	case reflect.String:
-		if parsers.StringParser != nil {
+		if parsers.StringParser != nil && val.Type().AssignableTo(reflect.TypeOf("")) {
 			value := parsers.StringParser.ParseString(val.String())
 			return reflect.ValueOf(value)
 		}
