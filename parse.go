@@ -72,7 +72,9 @@ func parseRecursive(parsers Parsers, val reflect.Value) reflect.Value {
 		for i := 0; i < val.NumField(); i++ {
 			res := parseRecursive(parsers, val.Field(i))
 			if res != reflect.ValueOf(nil) {
-				val.Field(i).Set(res)
+				if val.Field(i).CanSet() {
+					val.Field(i).Set(res)
+				}
 			}
 		}
 		return val
@@ -80,7 +82,9 @@ func parseRecursive(parsers Parsers, val reflect.Value) reflect.Value {
 		for i := 0; i < val.Len(); i++ {
 			res := parseRecursive(parsers, val.Index(i))
 			if res != reflect.ValueOf(nil) {
-				val.Index(i).Set(res)
+				if val.Index(i).CanSet() {
+					val.Index(i).Set(res)
+				}
 			}
 		}
 		return val
