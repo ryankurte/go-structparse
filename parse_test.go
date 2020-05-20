@@ -7,6 +7,7 @@ package structparse
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -78,10 +79,23 @@ func TestParsing(t *testing.T) {
 		assert.EqualValues(t, "boop", c.Fake["test2"]["test1"])
 	})
 
-    t.Run("Handles non-supported types", func(t *testing.T) {
+	t.Run("Handles non-supported types", func(t *testing.T) {
 		fem := FakeEnvMapper{"TEST", "REPLACED"}
-        c := struct {Fake bool} { false }
-        Strings(&fem, &c)
-    })
+		c := struct{ Fake bool }{false}
+		Strings(&fem, &c)
+	})
 
+	t.Run("struct with time", func(t *testing.T) {
+		fem := FakeEnvMapper{"TEST", "REPLACED"}
+		type Foo struct {
+			Bar  string
+			Time time.Time
+		}
+
+		foo := Foo{Bar: "TEST"}
+
+		Strings(&fem, &foo)
+
+		assert.EqualValues(t, "REPLACED", foo.Bar)
+	})
 }
