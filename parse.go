@@ -60,7 +60,7 @@ func parseRecursive(parsers Parsers, val reflect.Value) reflect.Value {
 		if o.IsValid() {
 			res := parseRecursive(parsers, o)
 			if res != reflect.ValueOf(nil) {
-				return res
+				return res.Addr()
 			}
 		}
 	case reflect.Interface:

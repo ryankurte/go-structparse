@@ -127,4 +127,22 @@ func TestParsing(t *testing.T) {
 
 		assert.EqualValues(t, "REPLACED", c.Bar.Name)
 	})
+
+	t.Run("struct with pointer field", func(t *testing.T) {
+		fem := FakeEnvMapper{"TEST", "REPLACED"}
+		type bar struct {
+			Name       string
+			unexported string
+		}
+		type foo struct {
+			Bar *bar
+		}
+
+		c := foo{Bar: &bar{Name: "TEST", unexported: "unexported"}}
+
+		Strings(&fem, &c)
+
+		assert.EqualValues(t, "REPLACED", c.Bar.Name)
+		assert.EqualValues(t, "unexported", c.Bar.unexported)
+	})
 }
