@@ -7,6 +7,7 @@ package structparse
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -78,10 +79,70 @@ func TestParsing(t *testing.T) {
 		assert.EqualValues(t, "boop", c.Fake["test2"]["test1"])
 	})
 
-    t.Run("Handles non-supported types", func(t *testing.T) {
+	t.Run("Handles non-supported types", func(t *testing.T) {
 		fem := FakeEnvMapper{"TEST", "REPLACED"}
-        c := struct {Fake bool} { false }
-        Strings(&fem, &c)
-    })
+		c := struct{ Fake bool }{false}
+		Strings(&fem, &c)
+	})
 
+	t.Run("struct with time", func(t *testing.T) {
+		fem := FakeEnvMapper{"TEST", "REPLACED"}
+		type Foo struct {
+			Bar  string
+			Time time.Time
+		}
+
+		foo := Foo{Bar: "TEST"}
+
+		Strings(&fem, &foo)
+
+		assert.EqualValues(t, "REPLACED", foo.Bar)
+	})
+
+	t.Run("map", func(t *testing.T) {
+		fem := FakeEnvMapper{"TEST", "REPLACED"}
+		type foo struct {
+			Name string
+		}
+		c := map[string]foo{"1": {"TEST"}, "2": {"TEST"}}
+
+		Strings(&fem, &c)
+
+		assert.EqualValues(t, "REPLACED", c["1"].Name)
+		assert.EqualValues(t, "REPLACED", c["2"].Name)
+	})
+
+	t.Run("struct", func(t *testing.T) {
+		fem := FakeEnvMapper{"TEST", "REPLACED"}
+		type bar struct {
+			Name string
+		}
+		type foo struct {
+			Bar bar
+		}
+
+		c := foo{Bar: bar{"TEST"}}
+
+		Strings(&fem, &c)
+
+		assert.EqualValues(t, "REPLACED", c.Bar.Name)
+	})
+
+	t.Run("struct with pointer field", func(t *testing.T) {
+		fem := FakeEnvMapper{"TEST", "REPLACED"}
+		type bar struct {
+			Name       string
+			unexported string
+		}
+		type foo struct {
+			Bar *bar
+		}
+
+		c := foo{Bar: &bar{Name: "TEST", unexported: "unexported"}}
+
+		Strings(&fem, &c)
+
+		assert.EqualValues(t, "REPLACED", c.Bar.Name)
+		assert.EqualValues(t, "unexported", c.Bar.unexported)
+	})
 }

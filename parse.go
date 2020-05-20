@@ -60,7 +60,7 @@ func parseRecursive(parsers Parsers, val reflect.Value) reflect.Value {
 		if o.IsValid() {
 			res := parseRecursive(parsers, o)
 			if res != reflect.ValueOf(nil) {
-				return res
+				return res.Addr()
 			}
 		}
 	case reflect.Interface:
@@ -69,15 +69,23 @@ func parseRecursive(parsers Parsers, val reflect.Value) reflect.Value {
 			return res
 		}
 	case reflect.Struct:
+		dst := val
+		if !val.CanSet() {
+			// this case is typically for a struct in map
+			dst = reflect.New(val.Type()).Elem()
+		}
+
 		for i := 0; i < val.NumField(); i++ {
+			if !dst.Field(i).CanSet() {
+				// this case is typically for unexported field, ignore it
+				continue
+			}
 			res := parseRecursive(parsers, val.Field(i))
 			if res != reflect.ValueOf(nil) {
-				if val.Field(i).CanSet() {
-					val.Field(i).Set(res)
-				}
+				dst.Field(i).Set(res)
 			}
 		}
-		return val
+		return dst
 	case reflect.Slice:
 		for i := 0; i < val.Len(); i++ {
 			res := parseRecursive(parsers, val.Index(i))
@@ -98,7 +106,7 @@ func parseRecursive(parsers Parsers, val reflect.Value) reflect.Value {
 		}
 		return val
 	case reflect.String:
-		if parsers.StringParser != nil {
+		if parsers.StringParser != nil && val.Type().AssignableTo(reflect.TypeOf("")) {
 			value := parsers.StringParser.ParseString(val.String())
 			return reflect.ValueOf(value)
 		}
