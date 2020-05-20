@@ -98,4 +98,33 @@ func TestParsing(t *testing.T) {
 
 		assert.EqualValues(t, "REPLACED", foo.Bar)
 	})
+
+	t.Run("map", func(t *testing.T) {
+		fem := FakeEnvMapper{"TEST", "REPLACED"}
+		type foo struct {
+			Name string
+		}
+		c := map[string]foo{"1": {"TEST"}, "2": {"TEST"}}
+
+		Strings(&fem, &c)
+
+		assert.EqualValues(t, "REPLACED", c["1"].Name)
+		assert.EqualValues(t, "REPLACED", c["2"].Name)
+	})
+
+	t.Run("struct", func(t *testing.T) {
+		fem := FakeEnvMapper{"TEST", "REPLACED"}
+		type bar struct {
+			Name string
+		}
+		type foo struct {
+			Bar bar
+		}
+
+		c := foo{Bar: bar{"TEST"}}
+
+		Strings(&fem, &c)
+
+		assert.EqualValues(t, "REPLACED", c.Bar.Name)
+	})
 }
